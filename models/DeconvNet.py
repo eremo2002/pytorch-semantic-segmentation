@@ -92,22 +92,22 @@ class DeconvNet(nn.Module):
 
         # fc6, 7x7 -> 1x1
         self.fc6_1 = nn.Conv2d(512, 4096, 7)
-        self.bn6_1 = nn.BatchNorm2d(4096)
+        #self.bn6_1 = nn.BatchNorm2d(4096)
         self.relu6_1 = nn.ReLU(inplace=False)        
 
 
         # fc7, 1x1
         self.fc7_1 = nn.Conv2d(4096, 4096, 1)
-        self.bn7_1 = nn.BatchNorm2d(4096)
+        #self.bn7_1 = nn.BatchNorm2d(4096)
         self.relu7_1 = nn.ReLU(inplace=False)
 
 
         # Deconv pat
 
-        # fc7_deconv, 1x1 -> 7x7
-        self.fc7_deconv = nn.ConvTranspose2d(4096, 512, 7)
-        self.bn_fc7 = nn.BatchNorm2d(512)
-        self.relu_fc7 = nn.ReLU(inplace=False)
+        # deconv-fc6, 1x1 -> 7x7
+        self.deconv_fc6 = nn.ConvTranspose2d(4096, 512, 7)
+        self.bn_deconv_fc6 = nn.BatchNorm2d(512)
+        self.relu_deconv_fc6 = nn.ReLU(inplace=False)
 
         
         # unpool5, 7x7 -> 14x14
@@ -115,17 +115,17 @@ class DeconvNet(nn.Module):
 
         
         # deconv5, 14x14
-        self.deconv5_1 = nn.ConvTranspose2d(512, 512, 3, padding=1)
-        self.debn5_1 = nn.BatchNorm2d(512)
-        self.derelu5_1 = nn.ReLU(inplace=False)  
+        self.deconv5_3 = nn.ConvTranspose2d(512, 512, 3, padding=1)
+        self.debn5_3 = nn.BatchNorm2d(512)
+        self.derelu5_3 = nn.ReLU(inplace=False)  
 
         self.deconv5_2 = nn.ConvTranspose2d(512, 512, 3, padding=1)
         self.debn5_2 = nn.BatchNorm2d(512)
         self.derelu5_2 = nn.ReLU(inplace=False)  
 
-        self.deconv5_3 = nn.ConvTranspose2d(512, 512, 3, padding=1)
-        self.debn5_3 = nn.BatchNorm2d(512)
-        self.derelu5_3 = nn.ReLU(inplace=False)  
+        self.deconv5_1 = nn.ConvTranspose2d(512, 512, 3, padding=1)
+        self.debn5_1 = nn.BatchNorm2d(512)
+        self.derelu5_1 = nn.ReLU(inplace=False)  
 
         
         # unpool4, 14x14 -> 28x28
@@ -133,17 +133,17 @@ class DeconvNet(nn.Module):
 
 
         # deconv4, 28x28
-        self.deconv4_1 = nn.ConvTranspose2d(512, 512, 3, padding=1)
-        self.debn4_1 = nn.BatchNorm2d(512)
-        self.derelu4_1 = nn.ReLU(inplace=False)  
+        self.deconv4_3 = nn.ConvTranspose2d(512, 512, 3, padding=1)
+        self.debn4_3 = nn.BatchNorm2d(512)
+        self.derelu4_3 = nn.ReLU(inplace=False)  
 
         self.deconv4_2 = nn.ConvTranspose2d(512, 512, 3, padding=1)
         self.debn4_2 = nn.BatchNorm2d(512)
         self.derelu4_2 = nn.ReLU(inplace=False)  
 
-        self.deconv4_3 = nn.ConvTranspose2d(512, 256, 3, padding=1)
-        self.debn4_3 = nn.BatchNorm2d(256)
-        self.derelu4_3 = nn.ReLU(inplace=False)  
+        self.deconv4_1 = nn.ConvTranspose2d(512, 256, 3, padding=1)
+        self.debn4_1 = nn.BatchNorm2d(256)
+        self.derelu4_1 = nn.ReLU(inplace=False)  
 
 
         # unpool3, 28x28 -> 56x56
@@ -151,17 +151,17 @@ class DeconvNet(nn.Module):
 
 
         # deconv3, 56x56
-        self.deconv3_1 = nn.ConvTranspose2d(256, 256, 3, padding=1)
-        self.debn3_1 = nn.BatchNorm2d(256)
-        self.derelu3_1 = nn.ReLU(inplace=False)  
+        self.deconv3_3 = nn.ConvTranspose2d(256, 256, 3, padding=1)
+        self.debn3_3 = nn.BatchNorm2d(256)
+        self.derelu3_3 = nn.ReLU(inplace=False)  
 
         self.deconv3_2 = nn.ConvTranspose2d(256, 256, 3, padding=1)
         self.debn3_2 = nn.BatchNorm2d(256)
         self.derelu3_2 = nn.ReLU(inplace=False)  
 
-        self.deconv3_3 = nn.ConvTranspose2d(256, 128, 3, padding=1)
-        self.debn3_3 = nn.BatchNorm2d(128)
-        self.derelu3_3 = nn.ReLU(inplace=False)  
+        self.deconv3_1 = nn.ConvTranspose2d(256, 128, 3, padding=1)
+        self.debn3_1 = nn.BatchNorm2d(128)
+        self.derelu3_1 = nn.ReLU(inplace=False)  
 
 
         # unpool2, 56x56 -> 112x112
@@ -169,13 +169,13 @@ class DeconvNet(nn.Module):
 
 
         # deconv2, 112x112
-        self.deconv2_1 = nn.ConvTranspose2d(128, 128, 3, padding=1)
-        self.debn2_1 = nn.BatchNorm2d(128)
-        self.derelu2_1 = nn.ReLU(inplace=False)  
-
-        self.deconv2_2 = nn.ConvTranspose2d(128, 64, 3, padding=1)
-        self.debn2_2 = nn.BatchNorm2d(64)
+        self.deconv2_2 = nn.ConvTranspose2d(128, 128, 3, padding=1)
+        self.debn2_2 = nn.BatchNorm2d(128)
         self.derelu2_2 = nn.ReLU(inplace=False)  
+
+        self.deconv2_1 = nn.ConvTranspose2d(128, 64, 3, padding=1)
+        self.debn2_1 = nn.BatchNorm2d(64)
+        self.derelu2_1 = nn.ReLU(inplace=False)  
 
 
         # unpool1, 112x112 -> 224x224
@@ -183,13 +183,13 @@ class DeconvNet(nn.Module):
 
 
         # deconv1, 224x224
-        self.deconv1_1 = nn.ConvTranspose2d(64, 64, 3, padding=1)
-        self.debn1_1 = nn.BatchNorm2d(64)
-        self.derelu1_1 = nn.ReLU(inplace=False)  
-
         self.deconv1_2 = nn.ConvTranspose2d(64, 64, 3, padding=1)
         self.debn1_2 = nn.BatchNorm2d(64)
-        self.derelu1_2 = nn.ReLU(inplace=False) 
+        self.derelu1_2 = nn.ReLU(inplace=False)  
+
+        self.deconv1_1 = nn.ConvTranspose2d(64, 64, 3, padding=1)
+        self.debn1_1 = nn.BatchNorm2d(64)
+        self.derelu1_1 = nn.ReLU(inplace=False) 
 
         # seg-score
         self.score = nn.Conv2d(64, num_classes, 1)
@@ -285,110 +285,118 @@ class DeconvNet(nn.Module):
 
         # pool5        
         x, pool5_ind = self.pool5(x)
+        # print(x.size())
 
 
         # fc6
-        x = self.fc6_1(x)
-        x = self.bn6_1(x)
+        x = self.fc6_1(x) 
+        #x = self.bn6_1(x)        
         x = self.relu6_1(x)
+        
 
 
         # fc7
         x = self.fc7_1(x)
-        x = self.bn7_1(x)
+        # x = self.bn7_1(x)
         x = self.relu7_1(x)
+        # print(x.size())
 
         
         # Deconv part
-        # fc7_deconv, 7x7
-        x = self.fc7_deconv(x)
-        x = self.bn_fc7(x)
-        x = self.relu_fc7(x)
+        # fc7_deconv, 1x1 -> 7x7
+        x = self.deconv_fc6(x)
+        x = self.bn_deconv_fc6(x)
+        x = self.relu_deconv_fc6(x)
+        # print('fc7-deconv', x.size())
 
-
+     
         # unpool5
         x = self.unpool5(x, pool5_ind, conv5_size)
+        #print('unpool5', x.size())
 
 
         # deconv5
-        x = self.deconv5_1(x)
-        x = self.debn5_1(x)
-        x = self.derelu5_1(x)
+        x = self.deconv5_3(x)
+        x = self.debn5_3(x)
+        x = self.derelu5_3(x)
         
         x = self.deconv5_2(x)
         x = self.debn5_2(x)
         x = self.derelu5_2(x)
 
-        x = self.deconv5_3(x)
-        x = self.debn5_3(x)
-        x = self.derelu5_3(x)
-
-
+        x = self.deconv5_1(x)
+        x = self.debn5_1(x)
+        x = self.derelu5_1(x)
+        #print('deconv5', x.size())
+       
         # unpool4
         x = self.unpool4(x, pool4_ind, conv4_size)
-
+        #print('unpool4', x.size())
 
         # deconv4
-        x = self.deconv4_1(x)
-        x = self.debn4_1(x)
-        x = self.derelu4_1(x)
+        x = self.deconv4_3(x)
+        x = self.debn4_3(x)
+        x = self.derelu4_3(x)
         
         x = self.deconv4_2(x)
         x = self.debn4_2(x)
         x = self.derelu4_2(x)
 
-        x = self.deconv4_3(x)
-        x = self.debn4_3(x)
-        x = self.derelu4_3(x)
-
+        x = self.deconv4_1(x)
+        x = self.debn4_1(x)
+        x = self.derelu4_1(x)
+        #print('deconv4', x.size())
 
         # unpool3
         x = self.unpool3(x, pool3_ind, conv3_size)       
+        #print('pool3', x.size())
 
 
         # deconv3
-        x = self.deconv3_1(x)
-        x = self.debn3_1(x)
-        x = self.derelu3_1(x)
+        x = self.deconv3_3(x)
+        x = self.debn3_3(x)
+        x = self.derelu3_3(x)
         
         x = self.deconv3_2(x)
         x = self.debn3_2(x)
         x = self.derelu3_2(x)
 
-        x = self.deconv3_3(x)
-        x = self.debn3_3(x)
-        x = self.derelu3_3(x)
-
+        x = self.deconv3_1(x)
+        x = self.debn3_1(x)
+        x = self.derelu3_1(x)
+        #print('deconv3', x.size())
 
         # unpool2
         x = self.unpool2(x, pool2_ind, conv2_size)
-
-
-        # deconv2
-        x = self.deconv2_1(x)
-        x = self.debn2_1(x)
-        x = self.derelu2_1(x)
+        #print('pool2', x.size())
         
+        # deconv2
         x = self.deconv2_2(x)
         x = self.debn2_2(x)
         x = self.derelu2_2(x)
-
+        
+        x = self.deconv2_1(x)
+        x = self.debn2_1(x)
+        x = self.derelu2_1(x)
+        #print('deconv2', x.size())
 
         # unpool1
         x = self.unpool1(x, pool1_ind, conv1_size)
-
+        #print('pool1', x.size())
 
         # deconv1
-        x = self.deconv1_1(x)
-        x = self.debn1_1(x)
-        x = self.derelu1_1(x)
-        
         x = self.deconv1_2(x)
         x = self.debn1_2(x)
         x = self.derelu1_2(x)
         
+        x = self.deconv1_1(x)
+        x = self.debn1_1(x)
+        x = self.derelu1_1(x)
+        #print('deconv1', x.size())
         
         # seg-score
         x = self.score(x)        
+        # print('score', x.size())
+
         return x
 
