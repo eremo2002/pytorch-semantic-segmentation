@@ -7,9 +7,11 @@ import torch.nn as nn
 import torch.optim as optim
 import os
 import math
-from models.FCN import FCN16
+from models.FCN import FCN8, FCN16
 from models.DeconvNet import DeconvNet
-from utils.dataset import VOC_segmentation
+from models.SegNet import SegNet
+from models.UNet import UNet
+from utils.dataset import *
 
 os.environ['CUDA_VISIBLE_DEVICES'] ='0'
 print(torch.cuda.is_available())
@@ -17,84 +19,113 @@ device = torch.device('cuda:0')
 print(device)
 
 
-# custom dataset
-transform_train = transforms.Compose([
-        transforms.Resize((224, 224)),        
-        # transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                              std=[0.229, 0.224, 0.225])        
-        ])
-transform_target = transforms.Compose([
-        transforms.Resize((224, 224)),        
-        # transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        ])
-
-dataset = VOC_segmentation('train', 
-                            train_transform = transform_train, 
-                            target_transform=transform_target)
-
-dataloader = torch.utils.data.DataLoader(dataset, 
-                                        batch_size=16, 
-                                        shuffle=True,
-                                        num_workers=0)
+# hyper parameters
+batch_size = 16
+epochs = 300
 
 
-classes = ('background',
-            'aeroplane',
-            'bicycle',
-            'bird',
-            'boat',
-            'bottle',
-            'bus',
-            'car',
-            'cat',
-            'chair',
-            'cow',
-            'diningtable',
-            'dog',
-            'horse',
-            'motorbike',
-            'person',
-            'pottedplant',
-            'sheep',
-            'sofa',
-            'train',
-            'tvmonitor')
+transform_train = transforms.Compose([		
+		Resize((224, 224)),
+		Normalize(),
+		ToTensor()		
+		])
 
-print(len(dataset))
+transform_val = transforms.Compose([		
+		Resize((224, 224)),
+		Normalize(),
+		ToTensor()
+		])
 
+dataset_train = VOC_segmentation('train', transform = transform_train)
+dataloader_train = torch.utils.data.DataLoader(dataset_train, 
+										batch_size=batch_size, 
+										shuffle=True,
+										# num_workers=1
+										)
 
-# model = FCN16(21)
-model = DeconvNet(21)
+dataset_val = VOC_segmentation('val', transform = transform_val)
+dataloader_valid = torch.utils.data.DataLoader(dataset_val, 
+										batch_size=4, 
+										shuffle=False,
+										# num_workers=1
+										)
 
 
-# # multi-gpu
-# net = nn.DataParallel(net)
 
+
+# model
+# model = FCN16(num_classes=21)
+model = DeconvNet(num_classes=21)
+x = torch.randn([1, 3, 224, 224])
+out = model(x)
+# print('input shape : ', x.shape)
+# print('output shape : ', out.size())
 model.to(device)
-criterion = nn.CrossEntropyLoss().cuda()
-optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
 
-for epoch in range(100):   #
-    train_loss = 0.0
-    for i, data in enumerate(dataloader):        
-        inputs, labels = data[0].to(device), data[1].to(device)
-        #print(inputs.shape, labels.shape)
+# loss function
+criterion = nn.CrossEntropyLoss().to(device)
 
-        optimizer.zero_grad()
 
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+# optimizer
+optimizer = optim.Adam(model.parameters(), lr=1e-5)
 
-        train_loss += loss.item()
-        if i % 16 == 15:    
-            print('[%d,\t%5d] loss: %.4f' %
-                  (epoch + 1, i + 1, train_loss / 16))
-            train_loss = 0.0
+
+# 
+print(f'train images {len(dataset_train)}, val images {len(dataset_val)}')
+
+
+
+best_val_loss = 999999
+for epoch in range(epochs):	
+	train_loss = 0.0
+	for step, data in enumerate(dataloader_train):		
+		image = data['image'].to(device)
+		label = data['label'].to(device)		
+		# print(image.shape, label.shape)
+		outputs = model(image)				
+		# outputs [N, 21, 224, 224]
+		# label [N, 224, 224]
+
+		# backwards
+		loss = criterion(outputs, label)			
+		optimizer.zero_grad()
+		loss.backward()
+		optimizer.step()
+
+		train_loss += loss.item()
+		if (step + 1) % 10 == 0:
+			print(f'Epoch: {epoch+1}, Step: {step+1}, Loss: {train_loss/10:.8f}')
+			train_loss = 0.0
+
+	# validation
+	model.eval()
+	with torch.no_grad():
+		val_loss_list = []		
+		for step, data in enumerate(dataloader_valid):
+			image = data['image'].to(device)
+			label = data['label'].to(device) 			
+
+			outputs = model(image)
+			loss = criterion(outputs, label)
+			val_loss_list.append(loss.item())
+
+		val_loss = sum(val_loss_list)/len(val_loss_list)
+		print(f'Epoch: {epoch+1}, val_loss: {val_loss:.4f}')
+	
+		if best_val_loss > val_loss:
+			print(f'Epoch: {epoch+1}, val_loss is improved from {best_val_loss:.4f} to {val_loss:.4f}')
+			best_val_loss = val_loss
+
+			# save best model
+			torch.save({
+			'epoch': epochs,
+			'model_state_dict': model.state_dict(),
+			'optimizer_state_dict': optimizer.state_dict(),
+			'loss': criterion,
+			}, 
+			'./weights/model.pth')
+			
 
 print('Finished Training')
+
