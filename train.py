@@ -29,6 +29,7 @@ transform_train = transforms.Compose([
 		Normalize(),
 		Horizontal_flip(),
 		Vertical_flip(),
+		Rotation((-30, 30)),
 		Cutout(0.35),
 		ToTensor()		
 		])
