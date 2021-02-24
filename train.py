@@ -27,28 +27,31 @@ epochs = 300
 transform_train = transforms.Compose([		
 		Resize((224, 224)),
 		Normalize(),
+		Horizontal_flip(),
+		Vertical_flip(),
+		Cutout(0.35),
 		ToTensor()		
 		])
 
 transform_val = transforms.Compose([		
 		Resize((224, 224)),
-		Normalize(),
+		Normalize(),		
 		ToTensor()
 		])
 
 dataset_train = VOC_segmentation('train', transform = transform_train)
 dataloader_train = torch.utils.data.DataLoader(dataset_train, 
-										batch_size=batch_size, 
-										shuffle=True,
-										# num_workers=1
-										)
+						batch_size=batch_size, 
+						shuffle=True,
+						# num_workers=1
+						)
 
 dataset_val = VOC_segmentation('val', transform = transform_val)
 dataloader_valid = torch.utils.data.DataLoader(dataset_val, 
-										batch_size=4, 
-										shuffle=False,
-										# num_workers=1
-										)
+						batch_size=4, 
+						shuffle=False,
+						# num_workers=1
+						)
 
 
 
