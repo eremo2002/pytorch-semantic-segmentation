@@ -26,73 +26,26 @@ class VOC_segmentation(torch.utils.data.Dataset):
         self.labels = [os.path.join(label_dir, x + ".png") for x in file_names]
 
         assert (len(self.images) == len(self.labels))
-
-    def encode_segmap(self, mask):
-        """Encode segmentation label images as pascal classes
-        Args:
-            mask (np.ndarray): raw segmentation label image of dimension
-                (M, N, 3), in which the Pascal classes are encoded as colours.
-        Returns:
-            (np.ndarray): class map with dimensions (M,N), where the value at
-            a given location is the integer denoting the class index.
-        """
-        mask = mask.astype(int)
-        label_mask = np.zeros((mask.shape[0], mask.shape[1]), dtype=np.int16)
-        for i, label in enumerate(self.get_pascal_labels()):
-            label_mask[np.where(np.all(mask == label, axis=-1))[:2]] = i
-        label_mask = label_mask.astype(int)
-        return label_mask   
-
-    def get_pascal_labels(self):
-        """Load the mapping that associates pascal classes with label colors
-        Returns:
-            np.ndarray with dimensions (21, 3)
-        """
-        return np.asarray(
-            [
-                [0, 0, 0],
-                [128, 0, 0],
-                [0, 128, 0],
-                [128, 128, 0],
-                [0, 0, 128],
-                [128, 0, 128],
-                [0, 128, 128],
-                [128, 128, 128],
-                [64, 0, 0],
-                [192, 0, 0],
-                [64, 128, 0],
-                [192, 128, 0],
-                [64, 0, 128],
-                [192, 0, 128],
-                [64, 128, 128],
-                [192, 128, 128],
-                [0, 64, 0],
-                [128, 64, 0],
-                [0, 192, 0],
-                [128, 192, 0],
-                [0, 64, 128],
-            ]
-        )
-
     
 
     def __getitem__(self, index):
-        # target would have the shape [batch_size, nb_classes, height, width]
+        # output would have the shape [batch_size, nb_classes, height, width]
+        # The target would have the shape [batch_size, height, width] and contain values in the range [0, nb_classes-1]
         # https://discuss.pytorch.org/t/tusimple-enet-lane-binary-segmentation-to-multi-channel-output-segmentation/82800/3
 
         image = Image.open(self.images[index])
         label = Image.open(self.labels[index])
         
-        image = np.array(image, dtype=np.float32)        
+        image = np.array(image, dtype=np.float32)
+        image = image[:,:,::-1] # bgr to rgb
         label = np.array(label, dtype=np.uint8)
-        label[label==255] = 0        
-        label = self.encode_segmap(label)    
-        
+        label[label==255] = 0
+
         data = {'image': image, 'label': label}
 
-        if self.transform:            
+        if self.transform:
             data = self.transform(data)
-            
+
         return data
 
     def __len__(self):
@@ -100,20 +53,18 @@ class VOC_segmentation(torch.utils.data.Dataset):
 
 
 class ToTensor(object):  
-    def __call__(self, data):
+    def __call__(self, data):        
         image, label = data['image'], data['label']
-
         image = image.transpose((2, 0, 1)).astype(np.float32)        
-        image = image/255.0
-        image = torch.from_numpy(image)
+        image = torch.from_numpy(image)        
 
+        label = label.astype(np.uint8) # if no this line, error
         label = torch.from_numpy(label)       
         label = label.clone().detach().long()
-
+        
         data = {'image': image, 'label': label}
 
         return data
-
 
 
 class Resize(object):
@@ -138,6 +89,62 @@ class Normalize(object):
         image = image/255.0
         # print('after normalize', np.min(image), np.max(image))
         
+        data = {'image': image, 'label': label}
+
+        return data
+
+
+class Horizontal_flip(object):
+    def __call__(self, data):
+        image, label = data['image'], data['label']
+
+        if np.random.rand() >= 0.5:
+            image = image[:, ::-1, :]
+            label = label[:, ::-1]
+
+        data = {'image': image, 'label': label}
+        return data
+
+
+class Vertical_flip(object):   
+    def __call__(self, data):
+        image, label = data['image'], data['label']
+
+        if np.random.rand() >= 0.5:
+            image = image[::-1, :, :]
+            label = label[::-1, :]
+        
+        data = {'image': image, 'label': label}
+
+        return data
+
+class Cutout(object):
+    def __init__(self, mask_ratio=0.3):
+        self.mask_ratio = mask_ratio
+        self.mask_value = 0
+    
+    def __call__(self, data):
+        image, label = data['image'], data['label']        
+
+        top = np.random.randint(0, image.shape[0]*self.mask_ratio)
+        left = np.random.randint(0, image.shape[1]*self.mask_ratio)
+        bottom = int(top + (image.shape[0]*self.mask_ratio))
+        right = int(left + (image.shape[1]*self.mask_ratio))
+        
+        
+
+        if top < 0:
+            top = 0
+        if left < 0:
+            left = 0
+        if bottom > image.shape[0]:
+            bottom = image.shape[0]
+        if right > image.shape[1]:
+            right = image.shape[1]
+            
+        image[top:bottom, left:right, :].fill(self.mask_value)
+        label[top:bottom, left:right].fill(self.mask_value)
+
         data = {'image': image, 'label': label}
 
         return data
