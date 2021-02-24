@@ -150,7 +150,8 @@ class Cutout(object):
         return data
 
     
-    class Rotation(object):   
+    
+class Rotation(object):   
     def __init__(self, angle=(-30, 30)):
         self.angle = angle        
 
