@@ -148,3 +148,21 @@ class Cutout(object):
         data = {'image': image, 'label': label}
 
         return data
+
+    
+    class Rotation(object):   
+    def __init__(self, angle=(-30, 30)):
+        self.angle = angle        
+
+    def __call__(self, data):
+        image, label = data['image'], data['label']
+
+        h, w = image.shape[0], image.shape[1]
+        rotation_angle = np.random.randint(self.angle[0], self.angle[1])
+        rotation_matrix = cv2.getRotationMatrix2D((h/2, w/2), rotation_angle, 1)
+        
+        image = cv2.warpAffine(image, rotation_matrix, (h, w))
+        label = cv2.warpAffine(label, rotation_matrix, (h, w))
+        data = {'image': image, 'label': label}
+
+        return data
